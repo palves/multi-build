@@ -1,0 +1,82 @@
+# Copyright (C) 2014 Free Software Foundation, Inc.
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Directory containing source files.
+srcdir = @with_srcdir@
+VPATH = @with_srcdir@
+
+CFLAGS=-g3 -O0
+
+# 1 - build dir
+# 2 - host triplet
+# 3 - extra configure options
+define configure
+	mkdir -p $(1)
+	cd $(1); $(srcdir)/configure --host=$(2) CFLAGS="$(CFLAGS)" $(3)
+	touch $(1)/configured
+endef
+
+define make
+	+$(MAKE) -C $(1)
+endef
+
+# 1 - build dir
+# 2 - host triplet
+# 3 - extra configure options
+define gen_host_rules
+$(1)/configured: $(srcdir)/configure
+	$(call configure,$(1),$(2),$(3))
+
+$(1): $(1)/configured force
+	$(call make,$(1))
+endef
+
+# List of hosts whose build dir matches the host triplet.
+GEN_HOSTS=\
+	aarch64-linux-gnu \
+	arm-linux-gnueabihf \
+	i686-pc-linux-gnu \
+	i686-w64-mingw32 \
+	m68k-linux-gnu \
+	mips-linux-gnu \
+	nios2-linux-gnu \
+	powerpc-linux-gnu \
+	sh-linux-gnu \
+	tilegx-unknown-linux-gnu \
+	x86_64-redhat-linux \
+	x86_64-w64-mingw32
+
+# List of hosts that need manual handling.
+MAN_HOSTS=mips-uclinux
+
+# All hosts.
+HOSTS=$(GEN_HOSTS) $(MAN_HOSTS)
+
+all: $(HOSTS)
+
+.PHONY: force
+force:
+
+# Generate rules for all GEN_HOSTS hosts.
+$(foreach host,$(GEN_HOSTS),$(eval $(call gen_host_rules,$(host),$(host))))
+
+# mips-uclinux
+$(eval $(call gen_host_rules,mips-uclinux,mips-linux-gnu,CC="mips-linux-gnu-gcc -muclibc"))
+
+Makefile: Makefile.in config.status
+	CONFIG_HEADERS="" $(SHELL) ./config.status
+
+config.status: configure
+	$(SHELL) ./config.status --recheck
