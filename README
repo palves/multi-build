@@ -1,0 +1,14 @@
+Build gdbserver for multiple targets, all at once.
+
+The set of targets is presently hard coded.  See Makefile.in.
+
+Usage:
+
+Put the compilers for all targets in the PATH.  E.g.,
+aarch64-linux-gnu-gcc, i686-pc-linux-gnu-gcc, etc.  Then:
+
+ $ mkdir build
+ $ cd build
+ $ /path/to/configure --with-srcdir=/path/to/src/gdb/gdbserver
+ ...
+ $ make -j8
